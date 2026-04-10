@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetMap — Network Topology Manager</title>
+    
+    <!-- Fonts -->
+    <link href="https://api.fontshare.com/v2/css?f[]=general-sans@600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+    
+    <!-- Icons & Animation -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.js"></script>
+
+    <style>
+        /* ========================================================================= */
+        /* Nexus Design System — CSS Tokens */
+        /* ========================================================================= */
+        :root {
+            /* Fluid Type Scale */
+            --text-xs: clamp(0.75rem, 0.7vw + 0.5rem, 0.8125rem); /* 12-13px */
+            --text-sm: clamp(0.8125rem, 0.75vw + 0.6rem, 0.875rem); /* 13-14px */
+            --text-base: clamp(0.875rem, 0.8vw + 0.65rem, 1rem); /* 14-16px */
+            --text-lg: clamp(1rem, 0.9vw + 0.75rem, 1.125rem); /* 16-18px */
+            --text-xl: clamp(1.25rem, 1.5vw + 1rem, 1.5rem); /* 20-24px */
+
+            /* Spacing (4px system) */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-12: 48px;
+            --space-32: 128px;
+
+            /* Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+
+            /* Interactive Transitions */
+            --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+
+            /* Icons / Accents Constants */
+            --color-blue: #3b82f6;
+            --color-purple: #8b5cf6;
+            --color-success: #10b981;
+            --color-orange: #f59e0b;
+            --color-gold: #eab308;
+            --color-notification: #ef4444;
+            --color-error: #ef4444;
+            
+            /* Light Mode Variables (Nexus Beige / Hydra Teal) */
+            --color-bg: #f8f6f0;
+            --color-surface-1: #ffffff;
+            --color-surface-2: #f2efe9;
+            --color-surface-offset: #eae6db;
+            --color-surface-dynamic: #e5e0d3;
+            
+            --color-text: #1a1a1a;
+            --color-text-muted: #52525b;
+            --color-text-faint: #a1a1aa;
+            
+            --color-border: #e4e0d5;
+            --color-border-hover: #d1cbbd;
+            
+            --color-primary: #0d9488;
+            --color-primary-hover: #0f766e;
+            --color-primary-highlight: rgba(13, 148, 136, 0.1);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Dark Mode Variables */
+        :root[data-theme="dark"] {
+            --color-bg: #0f0f11;
+            --color-surface-1: #18181b;
+            --color-surface-2: #27272a;
+            --color-surface-offset: #1f1f22;
+            --color-surface-dynamic: #3f3f46;
+            
+            --color-text: #f4f4f5;
+            --color-text-muted: #a1a1aa;
+            --color-text-faint: #52525b;
+            
+            --color-border: #27272a;
+            --color-border-hover: #3f3f46;
+            
+            --color-primary: #14b8a6;
+            --color-primary-hover: #2dd4bf;
+            --color-primary-highlight: rgba(20, 184, 166, 0.15);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -2px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Accessibility: prefers-reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Base Resets */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%; overflow: hidden;
+            background-color: var(--color-bg); color: var(--color-text);
+            font-family: 'Satoshi', sans-serif; font-size: var(--text-base);
+            line-height: 1.5; text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6, .display-text { font-family: 'General Sans', sans-serif; }
+
+        /* Typography Utilities */
+        .text-xs { font-size: var(--text-xs); }
+        .text-sm { font-size: var(--text-sm); }
+        .text-base { font-size: var(--text-base); }
+        .text-lg { font-size: var(--text-lg); }
+        .text-xl { font-size: var(--text-xl); font-weight: 600; }
+        .text-muted { color: var(--color-text-muted); }
+        
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0;
+            margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+        }
+        .focus\:not-sr-only:focus {
+            position: static; width: auto; height: auto;
+            clip: auto; padding: var(--space-2) var(--space-4);
+            background: var(--color-primary); color: white;
+            z-index: 1000;
+        }
+
+        /* Forms & Inputs */
+        input, select, textarea, button {
+            font-family: inherit; font-size: var(--text-sm);
+            color: inherit; background: transparent; border: none; outline: none;
+        }
+        
+        .input-base {
+            width: 100%; padding: var(--space-2) var(--space-3);
+            background: var(--color-surface-1); border: 1px solid var(--color-border);
+            border-radius: var(--radius-md); color: var(--color-text);
+            transition: border-color var(--transition-interactive), box-shadow var(--transition-interactive);
+        }
+        .input-base:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-highlight);
+        }
+        .input-base::placeholder { color: var(--color-text-faint); }
+        .input-error { border-color: var(--color-error); }
+
+        select.input-base { cursor: pointer; appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+        [data-theme="dark"] select.input-base { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f4f4f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; items-align: center; justify-content: center; gap: var(--space-2);
+            padding: var(--space-2) var(--space-4); border-radius: var(--radius-md);
+            font-weight: 500; cursor: pointer; transition: all var(--transition-interactive);
+            text-decoration: none; user-select: none; align-items: center; min-height: 32px;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+        
+        .btn-primary { background: var(--color-primary); color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+        
+        .btn-ghost { background: transparent; color: var(--color-text); }
+        .btn-ghost:hover:not(:disabled) { background: var(--color-surface-dynamic); }
+
+        .btn-icon { padding: var(--space-2); min-width: 32px; border-radius: var(--radius-md); color: var(--color-text-muted); }
+        .btn-icon:hover:not(:disabled) { background: var(--color-surface-dynamic); color: var(--color-text); }
+        .btn-icon.active { color: var(--color-primary); background: var(--color-primary-highlight); }
+        
+        .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--color-error); }
+        .btn-danger:hover:not(:disabled) { background: var(--color-error); color: white; }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; align-items: center; padding: 2px 6px;
+            background: var(--color-surface-2); border-radius: var(--radius-sm);
+            font-size: var(--text-xs); font-weight: 500; color: var(--color-text-muted);
+        }
+
+        /* Layout Grid */
+        .app-container {
+            display: grid;
+            grid-template-areas: 
+                "header header header"
+                "sidebar canvas properties"
+                "statusbar statusbar statusbar";
+            grid-template-columns: 240px 1fr 260px;
+            grid-template-rows: 56px 1fr 28px;
+            height: 100vh;
+            width: 100vw;
+            transition: grid-template-columns var(--transition-interactive);
+        }
+
+        /* Responsive Layout Overrides */
+        @media (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 240px 1fr 0px;
+            }
+            .properties-panel {
+                position: fixed; top: 56px; right: 0; bottom: 28px; width: 260px;
+                transform: translateX(100%); z-index: 40; border-left: 1px solid var(--color-border);
+                box-shadow: var(--shadow-lg); transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .properties-panel.open { transform: translateX(0); }
+        }
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 40px 1fr 0px;
+            }
+            .app-container.sidebar-open { grid-template-columns: 240px 1fr 0px; }
+            .sidebar .sidebar-content { opacity: 0; pointer-events: none; }
+            .app-container.sidebar-open .sidebar .sidebar-content { opacity: 1; pointer-events: auto; }
+            /* Mobile header tweaks */
+            .header-center { display: none; }
+        }
+
+        /* Header */
+        .header {
+            grid-area: header; background: var(--color-surface-1);
+            border-bottom: 1px solid var(--color-border); z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 var(--space-4);
+        }
+        .logo-area { display: flex; align-items: center; gap: var(--space-2); min-width: 200px; font-weight: 700; font-family: 'General Sans', sans-serif;}
+        .header-center { display: flex; align-items: center; gap: var(--space-2); }
+        .header-actions { display: flex; align-items: center; gap: var(--space-1); }
+
+        /* Sidebar */
+        .sidebar {
+            grid-area: sidebar; background: var(--color-surface-1);
+            border-right: 1px solid var(--color-border); display: flex; flex-direction: column;
+            overflow: hidden; z-index: 10;
+        }
+        .sidebar-header { padding: var(--space-4); border-bottom: 1px solid var(--color-border); }
+        .sidebar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: var(--space-2) 0; content-visibility: auto; }
+        
+        .device-category summary {
+            padding: var(--space-2) var(--space-4); cursor: pointer; list-style: none;
+            font-size: var(--text-xs); font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--color-text-faint); display: flex; align-items: center;
+        }
+        .device-category summary::-webkit-details-marker { display: none; }
+        .device-category summary i { transition: transform 0.2s; margin-right: var(--space-2); width: 14px; height: 14px;}
+        .device-category[open] summary i { transform: rotate(90deg); }
+        
+        .device-item {
+            display: flex; align-items: center; gap: var(--space-3);
+            padding: var(--space-2) var(--space-4); cursor: pointer;
+            border-left: 2px solid transparent; transition: background var(--transition-interactive);
+        }
+        .device-item:hover { background: var(--color-surface-dynamic); }
+        .device-item.active { border-left-color: var(--color-primary); background: var(--color-surface-offset); }
+        .device-item-info { flex: 1; min-width: 0; }
+        .device-item-name { font-size: var(--text-sm); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .device-item-ip { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+        /* Canvas Area */
+        .canvas-area {
+            grid-area: canvas; position: relative; overflow: hidden;
+            background-color: var(--color-bg);
+        }
+        canvas { display: block; width: 100%; height: 100%; cursor: default; }
+        .canvas-overlay { position: absolute; top: var(--space-4); left: var(--space-4); pointer-events: none; }
+        
+        /* Minimap */
+        .minimap-container {
+            position: absolute; bottom: var(--space-4); right: var(--space-4);
+            width: 160px; height: 100px; background: var(--color-surface-1);
+            border: 1px solid var(--color-border); border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm); z-index: 20; overflow: hidden;
+            display: none; /* toggled via JS */
+        }
+        .minimap-container.visible { display: block; }
+        #minimapCanvas { width: 100%; height: 100%; cursor: crosshair; }
+
+        /* Properties Panel */
+        .properties-panel {
+            grid-area: properties; background: var(--color-surface-1);
+            border-left: 1px solid var(--color-border); display: flex; flex-direction: column; z-index: 10;
+        }
+        .prop-header {
+            padding: var(--space-4); border-bottom: 1px solid var(--color-border);
+            display: flex; align-items: center; gap: var(--space-3);
+        }
+        .prop-icon-wrapper {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: var(--radius-sm); background: var(--color-surface-2);
+        }
+        .prop-scroll { flex: 1; overflow-y: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+        
+        .form-group { display: flex; flex-direction: column; gap: var(--space-1); }
+        .form-label { font-size: var(--text-xs); font-weight: 500; color: var(--color-text-muted); }
+        .inline-editable {
+            padding: var(--space-1) var(--space-2); margin: calc(var(--space-1) * -1) calc(var(--space-2) * -1);
+            border-radius: var(--radius-sm); border: 1px solid transparent; transition: all var(--transition-interactive);
+        }
+        .inline-editable:hover { background: var(--color-surface-2); }
+        .inline-editable:focus { background: var(--color-surface-1); border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-highlight); outline: none; }
+        
+        .connection-list { display: flex; flex-direction: column; gap: var(--space-2); }
+        .connection-item { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2); background: var(--color-surface-2); border-radius: var(--radius-sm); font-size: var(--text-sm); cursor: pointer;}
+        .connection-item:hover { background: var(--color-surface-dynamic); }
+        
+        /* Status Bar */
+        .statusbar {
+            grid-area: statusbar; background: var(--color-surface-1);
+            border-top: 1px solid var(--color-border); display: flex; align-items: center;
+            padding: 0 var(--space-4); gap: var(--space-4); font-size: var(--text-xs);
+            color: var(--color-text-muted); z-index: 100;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
+            z-index: 200; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+        }
+        .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: var(--color-surface-1); width: 100%; max-width: 400px;
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden;
+            transform: scale(0.95); opacity: 0; border: 1px solid var(--color-border);
+        }
+        .modal-backdrop.open .modal-content { transform: scale(1); opacity: 1; }
+        
+        .modal-header { padding: var(--space-4); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+        .modal-footer { padding: var(--space-4); border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: var(--space-2); }
+
+        /* Toasts */
+        .toast-container {
+            position: fixed; bottom: 40px; right: var(--space-4);
+            display: flex; flex-direction: column; gap: var(--space-2);
+            z-index: 300; pointer-events: none; width: 320px;
+        }
+        .toast {
+            background: var(--color-surface-1); border: 1px solid var(--color-border);
+            border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-3) var(--space-4);
+            display: flex; align-items: flex-start; gap: var(--space-3); pointer-events: auto;
+            transform: translateX(120%); opacity: 0;
+        }
+        .toast-icon { padding-top: 2px; }
+        .toast-content { flex: 1; }
+        .toast-title { font-weight: 500; font-size: var(--text-sm); margin-bottom: 2px; }
+        .toast-desc { font-size: var(--text-xs); color: var(--color-text-muted); }
+        .toast-undo { margin-top: var(--space-2); }
+        
+        .toast.success .toast-icon { color: var(--color-success); }
+        .toast.error .toast-icon { color: var(--color-error); }
+        .toast.warning .toast-icon { color: var(--color-orange); }
+        .toast.info .toast-icon { color: var(--color-blue); }
+
+        /* Context Menu */
+        .context-menu {
+            position: fixed; background: var(--color-surface-1); border: 1px solid var(--color-border);
+            border-radius: var(--radius-md); box-shadow: var(--shadow-md); min-width: 160px;
+            z-index: 400; padding: var(--space-1); display: none; opacity: 0; transform: scale(0.95);
+        }
+        .context-menu.open { display: block; opacity: 1; transform: scale(1); }
+        .menu-item {
+            display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm); color: var(--color-text); cursor: pointer; border-radius: var(--radius-sm); user-select: none;
+        }
+        .menu-item:hover { background: var(--color-primary); color: white; }
+        .menu-item:hover i[data-lucide] { color: white; }
+        .menu-item-danger { color: var(--color-error); }
+        .menu-item-danger:hover { background: var(--color-error); color: white; }
+        
+        /* Utility */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mt-4 { margin-top: var(--space-4); }
+
+    </style>
+</head>
+<body>
+    <a href="#canvas" class="sr-only focus:not-sr-only">Skip to canvas</a>
+
+    <div class="app-container" id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <button class="btn-icon" id="sidebarToggle" aria-label="Toggle Sidebar" style="display: none;">
+                    <i data-lucide="menu"></i>
+                </button>
+                <i data-lucide="network" style="color: var(--color-primary);"></i>
+                <span>NetMap</span>
+            </div>
+            
+            <div class="header-center">
+                <select class="input-base" id="networkSelect" style="width: 200px; font-weight: 500;" aria-label="Select Network">
+                    <!-- Populated by JS -->
+                </select>
+                <button class="btn btn-ghost btn-icon" id="btnNewNetwork" title="New Network" aria-label="New Network">
+                    <i data-lucide="plus"></i>
+                </button>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn-icon" id="btnConnectMode" title="Connect Mode (C)" aria-label="Toggle Connect Mode">
+                    <i data-lucide="cable"></i>
+                </button>
+                <button class="btn-icon" id="btnMinimap" title="Toggle Minimap" aria-label="Toggle Minimap">
+                    <i data-lucide="map"></i>
+                </button>
+                <div style="position: relative;" id="exportDropdown">
+                    <button class="btn-icon" id="btnExport" title="Export" aria-label="Export Menu">
+                        <i data-lucide="download"></i>
+                    </button>
+                    <!-- Export Menu -->
+                    <div class="context-menu" id="exportMenu" style="top: 40px; right: 0;">
+                        <div class="menu-item" id="btnExportJson"><i data-lucide="file-json" style="width: 16px;"></i> Export JSON</div>
+                        <div class="menu-item" id="btnExportPng"><i data-lucide="image" style="width: 16px;"></i> Export PNG</div>
+                    </div>
+                </div>
+                <button class="btn-icon" id="btnThemeToggle" title="Toggle Dark Mode" aria-label="Toggle Theme">
+                    <i data-lucide="moon"></i>
+                </button>
+                <button class="btn-icon" id="btnSettings" title="Settings" aria-label="Settings">
+                    <i data-lucide="settings"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header sidebar-content">
+                <input type="text" id="deviceSearch" class="input-base" placeholder="Filter devices..." aria-label="Filter devices">
+                <button class="btn btn-primary mt-4" style="width: 100%;" id="btnAddDevice" title="Add Device (A)">
+                    <i data-lucide="plus" style="width: 16px;"></i> Add Device
+                </button>
+            </div>
+            <div class="sidebar-scroll sidebar-content" id="deviceList">
+                <!-- Populated by JS -->
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <main class="canvas-area" role="application" aria-label="Network topology canvas">
+            <div class="canvas-overlay">
+                <div class="badge" id="modeIndicator" style="display: none; background: var(--color-primary); color: white;">
+                    <i data-lucide="cable" style="width: 12px; margin-right: 4px;"></i> Connect Mode Active
+                </div>
+            </div>
+            <canvas id="canvas" tabindex="0"></canvas>
+            
+            <div class="minimap-container" id="minimapContainer">
+                <canvas id="minimapCanvas"></canvas>
+            </div>
+        </main>
+
+        <!-- Properties Panel -->
+        <aside class="properties-panel" id="propertiesPanel">
+            <div id="propEmpty" class="prop-scroll">
+                <div class="prop-header" style="padding:0; border:none; margin-bottom: 16px;">
+                    <div class="prop-icon-wrapper"><i data-lucide="network"></i></div>
+                    <div>
+                        <div class="text-lg font-semibold" id="emptyNetName">Network</div>
+                        <div class="text-xs text-muted">Network Details</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <div class="text-sm" id="emptyNetDesc">Select a node or edge to view properties.</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stats</label>
+                    <div class="text-sm" id="emptyStats">0 Devices, 0 Edges</div>
+                </div>
+                <hr style="border:0; border-top: 1px solid var(--color-border); margin: var(--space-4) 0;">
+                <button class="btn btn-ghost" style="width: 100%; border: 1px solid var(--color-border);" id="btnEditNetwork">Edit Network</button>
+            </div>
+
+            <div id="propDevice" class="prop-scroll" style="display: none;">
+                <div class="prop-header" style="padding:0; border:none; margin-bottom: 16px;">
+                    <div class="prop-icon-wrapper"><i id="propDevIcon" data-lucide="server"></i></div>
+                    <div style="flex: 1;">
+                        <input type="text" id="propDevName" class="inline-editable text-lg font-semibold" style="width: 100%;" value="Device Name" aria-label="Device Name">
+                        <div class="badge" id="propDevTypeBadge" style="margin-top: 4px;">Server</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select id="propDevType" class="input-base" aria-label="Device Type"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">IP Address</label>
+                    <input type="text" id="propDevIp" class="input-base" aria-label="IP Address">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subnet Mask</label>
+                    <input type="text" id="propDevSubnet" class="input-base" aria-label="Subnet Mask">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">MAC Address</label>
+                    <input type="text" id="propDevMac" class="input-base" aria-label="MAC Address">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="propDevNotes" class="input-base" rows="3" aria-label="Notes"></textarea>
+                </div>
+                <hr style="border:0; border-top: 1px solid var(--color-border); margin: var(--space-2) 0;">
+                <div class="form-group">
+                    <label class="form-label" style="display: flex; justify-content: space-between;">
+                        Connections
+                        <button class="btn-ghost" style="padding:0; cursor:pointer;" id="btnPropConnect"><i data-lucide="plus" style="width:14px;"></i></button>
+                    </label>
+                    <div class="connection-list" id="propConnectionList"></div>
+                </div>
+                <div style="flex: 1;"></div>
+                <button class="btn btn-danger" style="width: 100%; margin-top: var(--space-4);" id="btnDeleteDevice">Delete Device</button>
+            </div>
+
+            <div id="propEdge" class="prop-scroll" style="display: none;">
+                <div class="prop-header" style="padding:0; border:none; margin-bottom: 16px;">
+                    <div class="prop-icon-wrapper"><i data-lucide="cable"></i></div>
+                    <div>
+                        <div class="text-lg font-semibold">Connection</div>
+                        <div class="text-xs text-muted" id="propEdgeEndpoints">A → B</div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Label</label>
+                    <input type="text" id="propEdgeLabel" class="input-base" aria-label="Connection Label">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">VLAN ID</label>
+                    <input type="number" id="propEdgeVlan" class="input-base" min="1" max="4094" aria-label="VLAN ID">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Link Speed</label>
+                    <select id="propEdgeSpeed" class="input-base" aria-label="Link Speed">
+                        <option value="">Unknown</option>
+                        <option value="10M">10M</option>
+                        <option value="100M">100M</option>
+                        <option value="1G">1G</option>
+                        <option value="10G">10G</option>
+                        <option value="25G">25G</option>
+                        <option value="40G">40G</option>
+                        <option value="100G">100G</option>
+                    </select>
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); margin-top: 8px; cursor: pointer;">
+                    <input type="checkbox" id="propEdgeDirected" style="width: 16px; height: 16px;"> Show Direction Arrow
+                </label>
+                <div style="flex: 1;"></div>
+                <button class="btn btn-ghost" style="width: 100%; border: 1px solid var(--color-border); margin-top: var(--space-4);" id="btnReverseEdge">Reverse Direction</button>
+                <button class="btn btn-danger" style="width: 100%; margin-top: var(--space-2);" id="btnDeleteEdge">Delete Connection</button>
+            </div>
+            
+            <button class="btn-icon" id="btnCloseProperties" style="position:absolute; top: 12px; right: 12px; display: none;" aria-label="Close Properties">
+                <i data-lucide="x"></i>
+            </button>
+        </aside>
+
+        <!-- Status Bar -->
+        <footer class="statusbar">
+            <span class="font-medium" style="color: var(--color-text);" id="statusNetName">Network Name</span>
+            <span>|</span>
+            <span id="statusNodes">0 Devices</span>
+            <span>|</span>
+            <span id="statusEdges">0 Connections</span>
+            <div style="flex: 1;"></div>
+            <span id="statusHelp">Selection Mode. Press C to connect.</span>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add/Edit Device Modal -->
+    <div class="modal-backdrop" id="modalDevice" role="dialog" aria-modal="true" aria-labelledby="modalDeviceTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-lg" id="modalDeviceTitle">Add Device</h2>
+                <button class="btn-icon modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="devModalId">
+                <div class="form-group">
+                    <label class="form-label" for="devModalName">Device Name *</label>
+                    <input type="text" id="devModalName" class="input-base" placeholder="e.g. Fritzbox 7590" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="devModalType">Device Type *</label>
+                    <select id="devModalType" class="input-base"></select>
+                </div>
+                <div class="form-row" style="display: flex; gap: var(--space-3);">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label" for="devModalIp">IP Address</label>
+                        <input type="text" id="devModalIp" class="input-base" placeholder="192.168.1.1">
+                        <div id="devModalIpError" class="text-xs text-error" style="color: var(--color-error); display:none; margin-top: 4px;">Invalid IP format</div>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="devModalSubnet">Subnet Mask</label>
+                        <input type="text" id="devModalSubnet" class="input-base" placeholder="255.255.255.0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="devModalMac">MAC Address</label>
+                    <input type="text" id="devModalMac" class="input-base" placeholder="AA:BB:CC:DD:EE:FF">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="devModalNotes">Notes</label>
+                    <textarea id="devModalNotes" class="input-base" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Cancel</button>
+                <button class="btn btn-primary" id="btnSaveDevice">Save Device</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Network Modal -->
+    <div class="modal-backdrop" id="modalNetwork" role="dialog" aria-modal="true" aria-labelledby="modalNetTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-lg" id="modalNetTitle">New Network</h2>
+                <button class="btn-icon modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="netModalName">Network Name *</label>
+                    <input type="text" id="netModalName" class="input-base" placeholder="e.g. Office LAN" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="netModalDesc">Description</label>
+                    <input type="text" id="netModalDesc" class="input-base" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="netModalVlan">VLAN ID</label>
+                    <input type="number" id="netModalVlan" class="input-base" min="1" max="4094" placeholder="Optional">
+                </div>
+                <div class="form-group" id="netModalTemplateGroup">
+                    <label class="form-label" for="netModalTemplate">Template</label>
+                    <select id="netModalTemplate" class="input-base">
+                        <option value="blank">Blank Canvas</option>
+                        <option value="home">Basic Home LAN</option>
+                        <option value="dmz">Server DMZ</option>
+                        <option value="mgmt">Management VLAN</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost modal-close">Cancel</button>
+                <button class="btn btn-primary" id="btnSaveNetwork">Create Network</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-backdrop" id="modalSettings" role="dialog" aria-modal="true" aria-labelledby="modalSettingsTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="text-lg" id="modalSettingsTitle">Settings</h2>
+                <button class="btn-icon modal-close" aria-label="Close"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body" style="gap: var(--space-6);">
+                <div>
+                    <h3 class="text-sm font-semibold" style="margin-bottom: var(--space-2); color: var(--color-text-muted);">Canvas</h3>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor:pointer;">
+                        <input type="checkbox" id="setSnapGrid"> Snap to Grid (G)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor:pointer;">
+                        <input type="checkbox" id="setShowMinimap" checked> Show Minimap
+                    </label>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold" style="margin-bottom: var(--space-2); color: var(--color-text-muted);">Darstellung</h3>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label class="form-label">Kanten-Stil</label>
+                        <select id="setEdgeStyle" class="input-base">
+                            <option value="straight">Gerade</option>
+                            <option value="curved">Curved (Bezier)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold" style="margin-bottom: var(--space-2); color: var(--color-text-muted);">Über</h3>
+                    <div class="text-sm">NetMap v1.0.0</div>
+                    <a href="https://docs.anthropic.com" target="_blank" class="text-sm" style="color: var(--color-primary); text-decoration: none;">Claude Documentation</a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary modal-close">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu (Canvas) -->
+    <div class="context-menu" id="canvasMenu">
+        <!-- Dynamically filled -->
+    </div>
+
+    <!-- Toasts container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    // Constants and Device Types
+    const DEVICE_TYPES = {
+        router: { icon: 'router', color: '--color-primary', label: 'Router' },
+        firewall: { icon: 'shield', color: '--color-notification', label: 'Firewall' },
+        switch: { icon: 'network', color: '--color-blue', label: 'Switch (Managed)' },
+        hub: { icon: 'plug', color: '--color-text-muted', label: 'Switch (Unmanaged)' },
+        server: { icon: 'server', color: '--color-purple', label: 'Server' },
+        workstation: { icon: 'monitor', color: '--color-text', label: 'Workstation' },
+        laptop: { icon: 'laptop', color: '--color-text', label: 'Laptop' },
+        ap: { icon: 'wifi', color: '--color-success', label: 'Access Point' },
+        iot: { icon: 'cpu', color: '--color-orange', label: 'IoT Device' },
+        nas: { icon: 'database', color: '--color-gold', label: 'NAS' },
+        vmhost: { icon: 'layers', color: '--color-primary', label: 'VM-Host / Proxmox' },
+        proxy: { icon: 'arrow-left-right', color: '--color-blue', label: 'Reverse Proxy' },
+        unknown: { icon: 'circle-help', color: '--color-text-faint', label: 'Unknown' }
+    };
+    // SVG Icon Caching
+    const iconCache = new Map();
+    function getIconSVG(name, colorStr) {
+        if (!lucide.icons[name]) return null;
+        let svg = lucide.icons[name].toSvg({ width: 20, height: 20, stroke: colorStr, 'stroke-width': 2 });
+        return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+    
+    // Resolve CSS Variable to Hex for Canvas
+    function getCssVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#000';
+    }
+
+    // App State
+    const state = {
+        networks: [],
+        activeNetworkId: null,
+        selectedDeviceId: null,
+        selectedConnectionId: null,
+        connectMode: false,
+        connectFromId: null,
+        history: [], // For Undo
+        settings: {
+            snapToGrid: false,
+            showMinimap: true,
+            showLabels: true,
+            gridSize: 24,
+            edgeStyle: 'straight' // straight or curved
+        }
+    };
+
+    // Helper: Generate ID
+    const genId = () => Math.random().toString(36).substr(2, 9);
+    
+    // Toast System
+    const toast = {
+        show: (type, title, desc, undoCallback = null) => {
+            const container = document.getElementById('toastContainer');
+            if (container.children.length >= 3) {
+                container.removeChild(container.firstChild);
+            }
+            
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            
+            let icon = 'info';
+            if(type === 'success') icon = 'check-circle';
+            if(type === 'error') icon = 'alert-circle';
+            if(type === 'warning') icon = 'alert-triangle';
+            
+            let html = `
+                <div class="toast-icon"><i data-lucide="${icon}"></i></div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    ${desc ? `<div class="toast-desc">${desc}</div>` : ''}
+            `;
+            if (undoCallback) {
+                html += `<button class="btn btn-ghost btn-sm toast-undo" style="padding: 4px 8px; font-size: var(--text-xs); border: 1px solid var(--color-border);" onclick="this.parentElement.parentElement.undoAction()">Undo (Ctrl+Z)</button>`;
+                el.undoAction = () => { undoCallback(); el.remove(); };
+            }
+            html += `</div>`;
+            el.innerHTML = html;
+            container.appendChild(el);
+            lucide.createIcons({ root: el });
+            
+            // Motion.js Animate
+            if (typeof animate !== 'undefined') {
+                animate(el, { x: ['120%', '0%'], opacity: [0, 1] }, { duration: 0.3, easing: [0.16, 1, 0.3, 1] });
+            } else {
+                el.style.transform = 'none'; el.style.opacity = '1';
+            }
+            
+            const timeout = undoCallback ? 6000 : 4000;
+            setTimeout(() => {
+                if (el.parentElement) {
+                    if (typeof animate !== 'undefined') {
+                        animate(el, { opacity: 0, scale: 0.95 }, { duration: 0.2 }).finished.then(() => el.remove());
+                    } else {
+                        el.remove();
+                    }
+                }
+            }, timeout);
+        },
+        success: (msg) => toast.show('success', 'Success', msg),
+        error: (msg) => toast.show('error', 'Error', msg),
+        info: (msg) => toast.show('info', 'Info', msg),
+        warning: (msg) => toast.show('warning', 'Warning', msg),
+        undo: (msg, cb) => toast.show('info', 'Action performed', msg, cb)
+    };
+
+    // History Logic
+    function saveHistory() {
+        if (!state.activeNetworkId) return;
+        const net = getActiveNetwork();
+        const snapshot = {
+            devices: JSON.parse(JSON.stringify(net.devices)),
+            connections: JSON.parse(JSON.stringify(net.connections))
+        };
+        state.history.push(snapshot);
+        if (state.history.length > 20) state.history.shift();
+    }
+    
+    function undoLastAction() {
+        if (state.history.length === 0) return;
+        const snapshot = state.history.pop();
+        const net = getActiveNetwork();
+        net.devices = JSON.parse(JSON.stringify(snapshot.devices));
+        net.connections = JSON.parse(JSON.stringify(snapshot.connections));
+        state.selectedDeviceId = null;
+        state.selectedConnectionId = null;
+        drawCanvas();
+        updateUI();
+        toast.info('Undo successful');
+    }
+
+    const getActiveNetwork = () => state.networks.find(n => n.id === state.activeNetworkId);
+
+    // Initial Data
+    function initData() {
+        const net1 = {
+            id: 'net-1', name: 'Home LAN', desc: 'Main home network', vlan: '',
+            viewport: { x: 0, y: 0, scale: 1 },
+            devices: [
+                { id: 'd1', name: 'Fritz!Box 7590', ip: '192.168.1.1', type: 'router', notes: 'DHCP', x: 400, y: 150 },
+                { id: 'd2', name: 'Starlink Router', ip: '192.168.1.2', type: 'router', notes: 'WAN Backup', x: 200, y: 150 },
+                { id: 'd3', name: 'Unifi Switch 24', ip: '192.168.1.3', type: 'switch', notes: '24-Port PoE', x: 400, y: 300 },
+                { id: 'd4', name: 'Proxmox Host', ip: '192.168.1.10', type: 'vmhost', notes: '64GB RAM', x: 300, y: 450 },
+                { id: 'd5', name: 'Synology NAS', ip: '192.168.1.20', type: 'nas', notes: 'RAID5', x: 500, y: 450 },
+                { id: 'd6', name: 'Desktop-PC', ip: '192.168.1.50', type: 'workstation', notes: 'Dev Machine', x: 650, y: 300 },
+                { id: 'd7', name: 'Home Assistant', ip: '192.168.1.100', type: 'server', notes: 'Docker LXC', x: 300, y: 600 }
+            ],
+            connections: [
+                { id: 'c1', from: 'd1', to: 'd3', label: '1G', directed: false },
+                { id: 'c2', from: 'd2', to: 'd1', label: 'WAN', directed: true },
+                { id: 'c3', from: 'd3', to: 'd4', label: '10G', directed: false },
+                { id: 'c4', from: 'd3', to: 'd5', label: '10G', directed: false },
+                { id: 'c5', from: 'd3', to: 'd6', label: '1G', directed: false },
+                { id: 'c6', from: 'd4', to: 'd7', label: 'Virtual', directed: false }
+            ]
+        };
+        
+        const net2 = {
+            id: 'net-2', name: 'Server DMZ', desc: 'Public facing services', vlan: '10',
+            viewport: { x: 0, y: 0, scale: 1 },
+            devices: [
+                { id: 's1', name: 'Firewall (OPNsense)', ip: '192.168.10.1', type: 'firewall', x: 400, y: 150 },
+                { id: 's2', name: 'Nginx Proxy', ip: '192.168.10.5', type: 'proxy', x: 400, y: 300 },
+                { id: 's3', name: 'Gitea', ip: '192.168.10.10', type: 'server', x: 250, y: 450 },
+                { id: 's4', name: 'Grafana', ip: '192.168.10.15', type: 'server', x: 400, y: 450 },
+                { id: 's5', name: 'Uptime Kuma', ip: '192.168.10.20', type: 'server', x: 550, y: 450 }
+            ],
+            connections: [
+                { id: 'cs1', from: 's1', to: 's2', label: 'Trunk', directed: true },
+                { id: 'cs2', from: 's2', to: 's3', label: 'HTTP', directed: true },
+                { id: 'cs3', from: 's2', to: 's4', label: 'HTTP', directed: true },
+                { id: 'cs4', from: 's2', to: 's5', label: 'HTTP', directed: true }
+            ]
+        };
+
+        state.networks = [net1, net2];
+        state.activeNetworkId = net1.id;
+    }
+
+    // =========================================================================
+    // Canvas Engine
+    // =========================================================================
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+    const minimapCanvas = document.getElementById('minimapCanvas');
+    const mCtx = minimapCanvas.getContext('2d', { alpha: false });
+    
+    let isDirty = true;
+    let canvasRect = { width: 0, height: 0 };
+    
+    // Interaction State
+    const interState = {
+        isDragging: false,
+        draggedNodeId: null,
+        isPanning: false,
+        lastMouseX: 0,
+        lastMouseY: 0,
+        hoverNodeId: null,
+        hoverEdgeId: null,
+        pulsingNodeId: null,
+        pulseRadius: 0,
+        pulseOpacity: 0.8
+    };
+
+    // ResizeObserver for Retina displays
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            const cr = entry.contentRect;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = cr.width * dpr;
+            canvas.height = cr.height * dpr;
+            canvas.style.width = `${cr.width}px`;
+            canvas.style.height = `${cr.height}px`;
+            ctx.scale(dpr, dpr);
+            canvasRect = cr;
+            isDirty = true;
+        }
+    });
+    resizeObserver.observe(canvas.parentElement);
+
+    // Helpers
+    const w2s = (x, y) => {
+        const net = getActiveNetwork();
+        if(!net) return {x:0, y:0};
+        const vp = net.viewport;
+        return { x: x * vp.scale + vp.x, y: y * vp.scale + vp.y };
+    }
+    const s2w = (x, y) => {
+        const net = getActiveNetwork();
+        if(!net) return {x:0, y:0};
+        const vp = net.viewport;
+        return { x: (x - vp.x) / vp.scale, y: (y - vp.y) / vp.scale };
+    }
+
+    const NODE_WIDTH = 120;
+    const NODE_HEIGHT = 60;
+    const NODE_RADIUS = 10;
+
+    // Load Icons into Images
+    function loadIcon(name, hexColor) {
+        const key = `${name}-${hexColor}`;
+        if (iconCache.has(key)) return iconCache.get(key);
+        const img = new Image();
+        img.src = getIconSVG(name, hexColor);
+        iconCache.set(key, img);
+        img.onload = () => { isDirty = true; };
+        return img;
+    }
+
+    // Hit Testing
+    function getNodeAt(x, y) {
+        const net = getActiveNetwork();
+        if(!net) return null;
+        const wx = s2w(x, y).x;
+        const wy = s2w(x, y).y;
+        
+        for (let i = net.devices.length - 1; i >= 0; i--) {
+            const d = net.devices[i];
+            const nx = d.x - NODE_WIDTH/2;
+            const ny = d.y - NODE_HEIGHT/2;
+            if (wx >= nx && wx <= nx + NODE_WIDTH && wy >= ny && wy <= ny + NODE_HEIGHT) {
+                return d;
+            }
+        }
+        return null; // expand hit area logic later
+    }
+
+    function getEdgeAt(x, y) {
+        const net = getActiveNetwork();
+        if(!net) return null;
+        const wx = s2w(x, y).x;
+        const wy = s2w(x, y).y;
+        
+        for (let conn of net.connections) {
+            const from = net.devices.find(d => d.id === conn.from);
+            const to = net.devices.find(d => d.id === conn.to);
+            if (!from || !to) continue;
+
+            const dist = pointToLineDistance(wx, wy, from.x, from.y, to.x, to.y);
+            const vp = net.viewport;
+            if (dist * vp.scale < 6) return conn; // 6px hit radius
+        }
+        return null;
+    }
+
+    function pointToLineDistance(x, y, x1, y1, x2, y2) {
+        const A = x - x1, B = y - y1, C = x2 - x1, D = y2 - y1;
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        if (len_sq !== 0) param = dot / len_sq;
+        let xx, yy;
+        if (param < 0) { xx = x1; yy = y1; }
+        else if (param > 1) { xx = x2; yy = y2; }
+        else { xx = x1 + param * C; yy = y1 + param * D; }
+        const dx = x - xx, dy = y - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Drawing
+    function drawNode(d, net) {
+        const vp = net.viewport;
+        const s = w2s(d.x, d.y);
+        const w = NODE_WIDTH * vp.scale;
+        const h = NODE_HEIGHT * vp.scale;
+        const r = NODE_RADIUS * vp.scale;
+        const x = s.x - w/2;
+        const y = s.y - h/2;
+
+        const isSelected = state.selectedDeviceId === d.id;
+        const isHovered = interState.hoverNodeId === d.id;
+
+        // Pulse Effect
+        if (state.connectMode && state.connectFromId === d.id) {
+            ctx.beginPath();
+            ctx.roundRect(x - interState.pulseRadius, y - interState.pulseRadius, w + interState.pulseRadius*2, h + interState.pulseRadius*2, r*1.5);
+            ctx.fillStyle = `rgba(13, 148, 136, ${interState.pulseOpacity})`; // primary color
+            ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        ctx.fillStyle = getCssVar('--color-surface-2');
+        
+        ctx.shadowColor = isSelected ? getCssVar('--color-primary') : 'rgba(0,0,0,0.08)';
+        ctx.shadowBlur = isSelected ? 12 : 4;
+        ctx.shadowOffsetY = isSelected ? 0 : 2;
+        ctx.fill();
+        
+        // Reset Shadow for next items
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+        ctx.lineWidth = isSelected ? 2 : 1;
+        ctx.strokeStyle = isSelected ? getCssVar('--color-primary') : (isHovered ? getCssVar('--color-border-hover') : getCssVar('--color-border'));
+        ctx.stroke();
+
+        // Icon
+        const typeInfo = DEVICE_TYPES[d.type] || DEVICE_TYPES.unknown;
+        const iconColor = getCssVar(typeInfo.color);
+        const img = loadIcon(typeInfo.icon, iconColor);
+        if (img && img.complete) {
+            ctx.drawImage(img, x + w/2 - 10*vp.scale, y + 8*vp.scale, 20*vp.scale, 20*vp.scale);
+        }
+
+        // Text
+        ctx.fillStyle = getCssVar('--color-text');
+        ctx.font = `500 ${13 * vp.scale}px Satoshi, sans-serif`;
+        ctx.textAlign = 'center';
+        
+        // Truncate name
+        let name = d.name;
+        if(ctx.measureText(name).width > w - 10) {
+            name = name.substring(0, 10) + '...';
+        }
+        ctx.fillText(name, x + w/2, y + 42 * vp.scale);
+
+        // IP
+        if (d.ip) {
+            ctx.fillStyle = getCssVar('--color-text-muted');
+            ctx.font = `400 ${11 * vp.scale}px Satoshi, sans-serif`;
+            ctx.fillText(d.ip, x + w/2, y + 54 * vp.scale);
+        }
+
+        // Badge
+        /*
+        const bx = x + w/2; const by = y + h;
+        ctx.fillStyle = getCssVar('--color-primary-highlight');
+        ctx.beginPath(); ctx.roundRect(bx - 20*vp.scale, by - 6*vp.scale, 40*vp.scale, 12*vp.scale, 6*vp.scale); ctx.fill();
+        ctx.fillStyle = getCssVar('--color-text');
+        ctx.font = `${9 * vp.scale}px Satoshi`;
+        ctx.fillText(typeInfo.label.split(' ')[0], bx, by+3*vp.scale);
+        */
+    }
+
+    function drawEdge(conn, net) {
+        const from = net.devices.find(d => d.id === conn.from);
+        const to = net.devices.find(d => d.id === conn.to);
+        if (!from || !to) return;
+
+        const p1 = w2s(from.x, from.y);
+        const p2 = w2s(to.x, to.y);
+        const isSelected = state.selectedConnectionId === conn.id;
+        const isHovered = interState.hoverEdgeId === conn.id;
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        
+        if (state.settings.edgeStyle === 'curved') {
+            const midX = (p1.x + p2.x) / 2;
+            ctx.bezierCurveTo(midX, p1.y, midX, p2.y, p2.x, p2.y);
+        } else {
+            ctx.lineTo(p2.x, p2.y);
+        }
+        
+        ctx.lineWidth = isSelected ? 2.5 : (isHovered ? 2 : 1.5);
+        ctx.strokeStyle = isSelected ? getCssVar('--color-primary') : (isHovered ? getCssVar('--color-text-muted') : getCssVar('--color-border'));
+        ctx.stroke();
+
+        // Direction Arrow
+        if (conn.directed) {
+            const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            const size = 6 * net.viewport.scale;
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.beginPath();
+            ctx.moveTo(midX, midY);
+            ctx.lineTo(midX - size * Math.cos(ang - Math.PI/6), midY - size * Math.sin(ang - Math.PI/6));
+            ctx.lineTo(midX - size * Math.cos(ang + Math.PI/6), midY - size * Math.sin(ang + Math.PI/6));
+            ctx.fill();
+        }
+
+        // Label
+        if (state.settings.showLabels && conn.label) {
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            ctx.font = `500 ${10 * net.viewport.scale}px Satoshi`;
+            const tw = ctx.measureText(conn.label).width;
+            ctx.fillStyle = getCssVar('--color-surface-1');
+            ctx.beginPath();
+            ctx.roundRect(midX - tw/2 - 4, midY - 8*net.viewport.scale, tw + 8, 16*net.viewport.scale, 4);
+            ctx.fill();
+            ctx.strokeStyle = getCssVar('--color-border');
+            ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = getCssVar('--color-text-muted');
+            ctx.textAlign = 'center';
+            ctx.fillText(conn.label, midX, midY + 3*net.viewport.scale);
+        }
+    }
+
+    function drawTempEdge() {
+        if (!state.connectMode || !state.connectFromId || (!interState.lastMouseX && !interState.lastMouseY)) return;
+        const net = getActiveNetwork();
+        const from = net.devices.find(d => d.id === state.connectFromId);
+        if (!from) return;
+        
+        const p1 = w2s(from.x, from.y);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(interState.lastMouseX, interState.lastMouseY);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = getCssVar('--color-primary');
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    function renderCanvas() {
+        if (!isDirty) {
+            requestAnimationFrame(renderCanvas);
+            return;
+        }
+        
+        const net = getActiveNetwork();
+        
+        // Background
+        ctx.fillStyle = getCssVar('--color-bg');
+        ctx.fillRect(0, 0, canvasRect.width, canvasRect.height);
+
+        if (!net) {
+            isDirty = false;
+            requestAnimationFrame(renderCanvas);
+            return;
+        }
+
+        // Grid
+        const vp = net.viewport;
+        const c_color = getCssVar('--color-text'); 
+        ctx.fillStyle = c_color;
+        ctx.globalAlpha = 0.08;
+        const gap = 24 * vp.scale;
+        const offsetX = vp.x % gap;
+        const offsetY = vp.y % gap;
+        for (let x = offsetX; x < canvasRect.width; x += gap) {
+            for (let y = offsetY; y < canvasRect.height; y += gap) {
+                ctx.beginPath(); ctx.arc(x, y, 1, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Edges
+        net.connections.forEach(c => drawEdge(c, net));
+        
+        // Temp Connect Edge
+        drawTempEdge();
+
+        // Nodes
+        net.devices.forEach(d => drawNode(d, net));
+
+        updateMinimap(net);
+
+        isDirty = false;
+        requestAnimationFrame(renderCanvas);
+    }
+    
+    // Pulse animation logic
+    function pulseLoop() {
+        if (state.connectMode && state.connectFromId) {
+            interState.pulseRadius += 0.3;
+            interState.pulseOpacity -= 0.015;
+            if (interState.pulseRadius > 15) {
+                interState.pulseRadius = 0;
+                interState.pulseOpacity = 0.8;
+            }
+            isDirty = true;
+        } else {
+            interState.pulseRadius = 0;
+            interState.pulseOpacity = 0.8;
+        }
+        requestAnimationFrame(pulseLoop);
+    }
+
+    function updateMinimap(net) {
+        if (!state.settings.showMinimap) return;
+        const mRect = minimapContainer.getBoundingClientRect();
+        mCtx.canvas.width = mRect.width;
+        mCtx.canvas.height = mRect.height;
+        
+        mCtx.fillStyle = getCssVar('--color-surface-1');
+        mCtx.fillRect(0, 0, mRect.width, mRect.height);
+        
+        if (net.devices.length === 0) return;
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        net.devices.forEach(d => {
+            if(d.x < minX) minX = d.x; if(d.x > maxX) maxX = d.x;
+            if(d.y < minY) minY = d.y; if(d.y > maxY) maxY = d.y;
+        });
+        
+        const pad = 200;
+        minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+        const mapW = maxX - minX; const mapH = maxY - minY;
+        const scaleX = mRect.width / mapW; const scaleY = mRect.height / mapH;
+        const mScale = Math.min(scaleX, scaleY);
+        
+        const ox = (mRect.width - mapW * mScale) / 2;
+        const oy = (mRect.height - mapH * mScale) / 2;
+
+        mCtx.fillStyle = getCssVar('--color-border');
+        net.devices.forEach(d => {
+            const mx = ox + (d.x - minX) * mScale;
+            const my = oy + (d.y - minY) * mScale;
+            mCtx.beginPath(); mCtx.arc(mx, my, 2, 0, Math.PI*2); mCtx.fill();
+        });
+
+        // Viewport rect
+        const vp = net.viewport;
+        const vx = ox + ((-vp.x / vp.scale) - minX) * mScale;
+        const vy = oy + ((-vp.y / vp.scale) - minY) * mScale;
+        const vw = (canvasRect.width / vp.scale) * mScale;
+        const vh = (canvasRect.height / vp.scale) * mScale;
+        
+        mCtx.strokeStyle = getCssVar('--color-primary');
+        mCtx.lineWidth = 1;
+        mCtx.strokeRect(vx, vy, vw, vh);
+    }
+    // =========================================================================
+    // Canvas Interactions
+    // =========================================================================
+    canvas.addEventListener('mousedown', e => {
+        saveHistory();
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Right click (Context Menu)
+        if (e.button === 2) {
+            const node = getNodeAt(x, y);
+            const edge = getEdgeAt(x, y);
+            showContextMenu(e.clientX, e.clientY, node, edge);
+            return;
+        }
+        
+        hideContextMenu();
+        if (e.button !== 0) return;
+
+        const node = getNodeAt(x, y);
+        if (state.connectMode) {
+            if (node) {
+                if (!state.connectFromId) {
+                    state.connectFromId = node.id;
+                } else {
+                    if (state.connectFromId !== node.id) {
+                        const net = getActiveNetwork();
+                        // check if exists
+                        const exists = net.connections.find(c => (c.from === state.connectFromId && c.to === node.id) || (c.to === state.connectFromId && c.from === node.id));
+                        if (!exists) {
+                            net.connections.push({ id: genId(), from: state.connectFromId, to: node.id, label: '', vlan: '', linkSpeed: '', directed: false });
+                            toast.info(`Connection created: ${net.devices.find(d=>d.id===state.connectFromId).name} ↔ ${node.name}`);
+                            isDirty = true;
+                        } else {
+                            toast.warning('Connection already exists');
+                        }
+                    }
+                    // keep connect mode active, just reset fromId
+                    state.connectFromId = node.id;
+                }
+            } else {
+                setConnectMode(false);
+            }
+        } else {
+            if (node) {
+                state.selectedDeviceId = node.id;
+                state.selectedConnectionId = null;
+                interState.isDragging = true;
+                interState.draggedNodeId = node.id;
+                openProperties();
+            } else {
+                const edge = getEdgeAt(x, y);
+                if (edge) {
+                    state.selectedConnectionId = edge.id;
+                    state.selectedDeviceId = null;
+                    openProperties();
+                } else {
+                    state.selectedDeviceId = null;
+                    state.selectedConnectionId = null;
+                    interState.isPanning = true;
+                }
+            }
+        }
+        interState.lastMouseX = x;
+        interState.lastMouseY = y;
+        isDirty = true; updateUI();
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const dx = x - interState.lastMouseX;
+        const dy = y - interState.lastMouseY;
+        const net = getActiveNetwork();
+        if(!net) return;
+
+        if (interState.isDragging && interState.draggedNodeId) {
+            const d = net.devices.find(n => n.id === interState.draggedNodeId);
+            if (d) {
+                d.x += dx / net.viewport.scale;
+                d.y += dy / net.viewport.scale;
+                if (state.settings.snapToGrid) {
+                    d.x = Math.round(d.x / state.settings.gridSize) * state.settings.gridSize;
+                    d.y = Math.round(d.y / state.settings.gridSize) * state.settings.gridSize;
+                }
+                isDirty = true;
+            }
+        } else if (interState.isPanning) {
+            net.viewport.x += dx;
+            net.viewport.y += dy;
+            canvas.style.cursor = 'grabbing';
+            isDirty = true;
+        } else {
+            // Hover states
+            const node = getNodeAt(x, y);
+            const edge = getEdgeAt(x, y);
+            if (node && interState.hoverNodeId !== node.id) { interState.hoverNodeId = node.id; interState.hoverEdgeId = null; canvas.style.cursor = 'pointer'; isDirty = true; }
+            else if (!node && edge && interState.hoverEdgeId !== edge.id) { interState.hoverEdgeId = edge.id; interState.hoverNodeId = null; canvas.style.cursor = 'pointer'; isDirty = true; }
+            else if (!node && !edge && (interState.hoverNodeId || interState.hoverEdgeId)) { interState.hoverNodeId = null; interState.hoverEdgeId = null; canvas.style.cursor = state.connectMode ? 'crosshair' : 'default'; isDirty = true; }
+        }
+
+        interState.lastMouseX = x;
+        interState.lastMouseY = y;
+        if (state.connectMode && state.connectFromId) isDirty = true; // temp edge redraw
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        interState.isDragging = false;
+        interState.draggedNodeId = null;
+        interState.isPanning = false;
+        if (!state.connectMode) canvas.style.cursor = 'default';
+        isDirty = true;
+    });
+
+    canvas.addEventListener('dblclick', e => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const node = getNodeAt(x, y);
+        if(node) {
+            openDeviceModal(node);
+        }
+    });
+
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const net = getActiveNetwork();
+        if(!net) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const zoomIntensity = 0.1;
+        const wheel = e.deltaY < 0 ? 1 : -1;
+        let zoom = Math.exp(wheel * zoomIntensity);
+        
+        let newScale = net.viewport.scale * zoom;
+        if(newScale < 0.25) newScale = 0.25;
+        if(newScale > 4) newScale = 4;
+        zoom = newScale / net.viewport.scale;
+
+        net.viewport.x = mouseX - (mouseX - net.viewport.x) * zoom;
+        net.viewport.y = mouseY - (mouseY - net.viewport.y) * zoom;
+        net.viewport.scale = newScale;
+        
+        isDirty = true;
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', e => {
+        if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        
+        const net = getActiveNetwork();
+        if (!net) return;
+
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            saveHistory();
+            if (state.selectedDeviceId) {
+                const name = net.devices.find(d=>d.id===state.selectedDeviceId)?.name;
+                net.connections = net.connections.filter(c => c.from !== state.selectedDeviceId && c.to !== state.selectedDeviceId);
+                net.devices = net.devices.filter(d => d.id !== state.selectedDeviceId);
+                state.selectedDeviceId = null;
+                toast.undo(`Device '${name}' deleted`, undoLastAction);
+            } else if (state.selectedConnectionId) {
+                net.connections = net.connections.filter(c => c.id !== state.selectedConnectionId);
+                state.selectedConnectionId = null;
+                toast.undo(`Connection deleted`, undoLastAction);
+            }
+            updateUI(); isDirty = true;
+        }
+        if (e.key === 'Escape') {
+            hideContextMenu();
+            if (state.connectMode) setConnectMode(false);
+            else { state.selectedDeviceId = null; state.selectedConnectionId = null; updateUI(); isDirty = true; }
+        }
+        if (e.key.toLowerCase() === 'c') setConnectMode(!state.connectMode);
+        if (e.key.toLowerCase() === 'a') openDeviceModal();
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastAction(); }
+        if (e.key.toLowerCase() === 'f') {
+            // Fit to screen
+            if (net.devices.length === 0) return;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            net.devices.forEach(d => {
+                if(d.x < minX) minX = d.x; if(d.x > maxX) maxX = d.x;
+                if(d.y < minY) minY = d.y; if(d.y > maxY) maxY = d.y;
+            });
+            const p = 100;
+            minX -= p; minY -= p; maxX += p; maxY += p;
+            const w = maxX - minX, h = maxY - minY;
+            const scaleX = canvasRect.width / w, scaleY = canvasRect.height / h;
+            net.viewport.scale = Math.min(scaleX, scaleY, 1.5);
+            net.viewport.x = (canvasRect.width - w * net.viewport.scale) / 2 - minX * net.viewport.scale;
+            net.viewport.y = (canvasRect.height - h * net.viewport.scale) / 2 - minY * net.viewport.scale;
+            isDirty = true;
+            toast.info('View centered');
+        }
+        if (e.key.toLowerCase() === 'g') {
+            state.settings.snapToGrid = !state.settings.snapToGrid;
+            toast.info(`Grid snapping ${state.settings.snapToGrid ? 'enabled' : 'disabled'}`);
+        }
+    });
+
+    // Minimap Interaction
+    let minimapDragging = false;
+    minimapCanvas.addEventListener('mousedown', e => { minimapDragging = true; panMinimap(e); });
+    window.addEventListener('mouseup', () => minimapDragging = false);
+    window.addEventListener('mousemove', e => { if (minimapDragging) panMinimap(e); });
+    function panMinimap(e) {
+        const net = getActiveNetwork();
+        if(!net || net.devices.length===0) return;
+        const rect = minimapCanvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        net.devices.forEach(d => {
+            if(d.x < minX) minX = d.x; if(d.x > maxX) maxX = d.x;
+            if(d.y < minY) minY = d.y; if(d.y > maxY) maxY = d.y;
+        });
+        const pad = 200; minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+        const mapW = maxX - minX; const mapH = maxY - minY;
+        const scaleX = rect.width / mapW; const scaleY = rect.height / mapH;
+        const mScale = Math.min(scaleX, scaleY);
+        const ox = (rect.width - mapW * mScale) / 2;
+        const oy = (rect.height - mapH * mScale) / 2;
+
+        const targetWorldX = ((mx - ox) / mScale) + minX;
+        const targetWorldY = ((my - oy) / mScale) + minY;
+        
+        net.viewport.x = (canvasRect.width / 2) - (targetWorldX * net.viewport.scale);
+        net.viewport.y = (canvasRect.height / 2) - (targetWorldY * net.viewport.scale);
+        isDirty = true;
+    }
+
+    // Context Menu Logic
+    const contextMenu = document.getElementById('canvasMenu');
+    function showContextMenu(x, y, node, edge) {
+        let html = '';
+        if (node) {
+            state.selectedDeviceId = node.id;
+            state.selectedConnectionId = null;
+            html = `
+                <div class="menu-item" onclick="openDeviceModal(getActiveNetwork().devices.find(d=>d.id==='${node.id}')); hideContextMenu();"><i data-lucide="pencil" style="width:16px;"></i> Edit Properties</div>
+                <div class="menu-item" onclick="setConnectMode(true); state.connectFromId='${node.id}'; hideContextMenu();"><i data-lucide="cable" style="width:16px;"></i> Connect from here</div>
+                <div class="menu-item menu-item-danger" onclick="saveHistory(); document.dispatchEvent(new KeyboardEvent('keydown',{'key':'Delete'})); hideContextMenu();"><i data-lucide="trash" style="width:16px;"></i> Delete</div>
+            `;
+        } else if (edge) {
+            state.selectedConnectionId = edge.id;
+            state.selectedDeviceId = null;
+            html = `
+                <div class="menu-item" onclick="reverseEdge('${edge.id}'); hideContextMenu();"><i data-lucide="arrow-up-down" style="width:16px;"></i> Reverse Direction</div>
+                <div class="menu-item menu-item-danger" onclick="saveHistory(); document.dispatchEvent(new KeyboardEvent('keydown',{'key':'Delete'})); hideContextMenu();"><i data-lucide="trash" style="width:16px;"></i> Delete</div>
+            `;
+        } else { return; } // No menu for empty canvas
+
+        updateUI(); isDirty = true;
+        contextMenu.innerHTML = html;
+        lucide.createIcons({ root: contextMenu });
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.classList.add('open');
+    }
+    function hideContextMenu() { contextMenu.classList.remove('open'); }
+    function reverseEdge(id) {
+        saveHistory();
+        const c = getActiveNetwork().connections.find(x=>x.id===id);
+        if(c) { const t=c.from; c.from=c.to; c.to=t; isDirty=true; updateUI(); }
+    }
+    
+    // Disable native context menu
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // =========================================================================
+    // UI Interactions & State Binding
+    // =========================================================================
+    function setConnectMode(active) {
+        state.connectMode = active;
+        state.connectFromId = null;
+        const btn = document.getElementById('btnConnectMode');
+        const ind = document.getElementById('modeIndicator');
+        if (active) {
+            btn.classList.add('active');
+            canvas.style.cursor = 'crosshair';
+            ind.style.display = 'inline-flex';
+            toast.info('Connect Mode: Click a device to start');
+        } else {
+            btn.classList.remove('active');
+            canvas.style.cursor = 'default';
+            ind.style.display = 'none';
+        }
+        isDirty = true;
+    }
+
+    document.getElementById('btnConnectMode').addEventListener('click', () => setConnectMode(!state.connectMode));
+    
+    document.getElementById('btnMinimap').addEventListener('click', () => {
+        state.settings.showMinimap = !state.settings.showMinimap;
+        document.getElementById('minimapContainer').classList.toggle('visible', state.settings.showMinimap);
+        isDirty = true;
+    });
+
+    document.getElementById('btnThemeToggle').addEventListener('click', () => {
+        const root = document.documentElement;
+        if(root.getAttribute('data-theme') === 'dark') root.setAttribute('data-theme', 'light');
+        else root.setAttribute('data-theme', 'dark');
+        isDirty = true; // redraw canvas colors
+    });
+
+    // Populate Sidebar
+    function updateSidebar() {
+        const net = getActiveNetwork();
+        const list = document.getElementById('deviceList');
+        const filter = document.getElementById('deviceSearch').value.toLowerCase();
+        
+        if (!net) { list.innerHTML = ''; return; }
+
+        const cats = {
+            'Core Network': ['router', 'firewall', 'switch', 'hub'],
+            'Servers': ['server', 'vmhost', 'nas', 'proxy'],
+            'Clients': ['workstation', 'laptop'],
+            'Wireless & IoT': ['ap', 'iot']
+        };
+
+        let html = '';
+        for (const [catName, types] of Object.entries(cats)) {
+            const items = net.devices.filter(d => types.includes(d.type) && (d.name.toLowerCase().includes(filter) || (d.ip && d.ip.includes(filter))));
+            if (items.length > 0 || filter === '') {
+                html += `
+                <details class="device-category" open>
+                    <summary><i data-lucide="chevron-right"></i> ${catName}</summary>
+                    <div class="category-items">
+                `;
+                items.forEach(d => {
+                    const iconName = DEVICE_TYPES[d.type].icon;
+                    html += `
+                        <div class="device-item ${state.selectedDeviceId === d.id ? 'active' : ''}" data-id="${d.id}" onclick="saveHistory(); selectNodeFromSidebar('${d.id}')">
+                            <i data-lucide="${iconName}" style="color: var(${DEVICE_TYPES[d.type].color}); width: 18px;"></i>
+                            <div class="device-item-info">
+                                <div class="device-item-name">${d.name}</div>
+                                <div class="device-item-ip">${d.ip || 'No IP'}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></details>`;
+            }
+        }
+        // Others
+        const otherItems = net.devices.filter(d => !Object.values(cats).flat().includes(d.type) && (d.name.toLowerCase().includes(filter)));
+        if (otherItems.length>0) {
+            html += `<details class="device-category" open><summary><i data-lucide="chevron-right"></i> Other</summary><div>`;
+            otherItems.forEach(d => {
+                html += `
+                    <div class="device-item ${state.selectedDeviceId === d.id ? 'active' : ''}" data-id="${d.id}" onclick="selectNodeFromSidebar('${d.id}')">
+                            <i data-lucide="${DEVICE_TYPES.unknown.icon}" style="width: 18px;"></i>
+                            <div class="device-item-info">
+                                <div class="device-item-name">${d.name}</div>
+                                <div class="device-item-ip">${d.ip || ''}</div>
+                            </div>
+                    </div>`;
+            });
+            html += `</div></details>`;
+        }
+        
+        list.innerHTML = html;
+        lucide.createIcons({ root: list });
+    }
+
+    document.getElementById('deviceSearch').addEventListener('input', updateSidebar);
+    
+    window.selectNodeFromSidebar = (id) => {
+        state.selectedDeviceId = id;
+        state.selectedConnectionId = null;
+        isDirty = true;
+        updateUI();
+        openProperties();
+    };
+
+    // Update Network Dropdown
+    function updateNetworkSwitcher() {
+        const sel = document.getElementById('networkSelect');
+        sel.innerHTML = state.networks.map(n => `<option value="${n.id}">${n.name}</option>`).join('');
+        sel.value = state.activeNetworkId;
+    }
+    
+    document.getElementById('networkSelect').addEventListener('change', e => {
+        state.activeNetworkId = e.target.value;
+        state.selectedDeviceId = null;
+        state.selectedConnectionId = null;
+        const app = document.getElementById('app');
+        state.history = []; // clear history on network change
+        if (typeof animate !== 'undefined') {
+            animate(canvas, { opacity: [0, 1] }, { duration: 0.15 });
+        }
+        isDirty = true;
+        updateUI();
+        toast.info(`Switched to network: ${getActiveNetwork().name}`);
+    });
+
+    // Mobile Sidebar
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+        document.getElementById('app').classList.toggle('sidebar-open');
+    });
+    
+    // Properties Panel
+    function openProperties() {
+        if(window.innerWidth <= 1024) document.getElementById('propertiesPanel').classList.add('open');
+    }
+    document.getElementById('btnCloseProperties')?.addEventListener('click', () => {
+        document.getElementById('propertiesPanel').classList.remove('open');
+    });
+
+    function updatePropertiesPanel() {
+        const net = getActiveNetwork();
+        const pEmpty = document.getElementById('propEmpty');
+        const pDev = document.getElementById('propDevice');
+        const pEdge = document.getElementById('propEdge');
+        
+        pEmpty.style.display = 'none'; pDev.style.display = 'none'; pEdge.style.display = 'none';
+
+        if (state.selectedDeviceId) {
+            pDev.style.display = 'flex';
+            const d = net.devices.find(x => x.id === state.selectedDeviceId);
+            if (!d) return;
+
+            document.getElementById('propDevName').value = d.name;
+            document.getElementById('propDevTypeBadge').innerText = DEVICE_TYPES[d.type]?.label || 'Unknown';
+            document.getElementById('propDevIp').value = d.ip || '';
+            document.getElementById('propDevSubnet').value = d.subnet || '';
+            document.getElementById('propDevMac').value = d.mac || '';
+            document.getElementById('propDevNotes').value = d.notes || '';
+            document.getElementById('propDevIcon').setAttribute('data-lucide', DEVICE_TYPES[d.type]?.icon || 'circle-help');
+            
+            const selType = document.getElementById('propDevType');
+            selType.innerHTML = Object.entries(DEVICE_TYPES).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+            selType.value = d.type;
+
+            // Connections
+            const conns = net.connections.filter(c => c.from === d.id || c.to === d.id);
+            document.getElementById('propConnectionList').innerHTML = conns.map(c => {
+                const targetId = c.from === d.id ? c.to : c.from;
+                const targetDev = net.devices.find(x => x.id === targetId);
+                const prefix = c.directed ? (c.from === d.id ? '→ ' : '← ') : '↔ ';
+                return `<div class="connection-item" onclick="state.selectedConnectionId='${c.id}'; state.selectedDeviceId=null; updateUI(); isDirty=true; openProperties();">
+                            <span>${prefix}${targetDev?.name || 'Unknown'}</span>
+                            <span class="badge" style="background:var(--color-bg)">${c.label||c.linkSpeed||'Link'} <i data-lucide="chevron-right" style="width:12px; margin-left:4px;"></i></span>
+                        </div>`;
+            }).join('') || '<div class="text-xs text-muted">No connections</div>';
+            
+            lucide.createIcons({ root: pDev });
+            
+        } else if (state.selectedConnectionId) {
+            pEdge.style.display = 'flex';
+            const c = net.connections.find(x => x.id === state.selectedConnectionId);
+            if (!c) return;
+            const fromDev = net.devices.find(x=>x.id===c.from);
+            const toDev = net.devices.find(x=>x.id===c.to);
+            document.getElementById('propEdgeEndpoints').innerHTML = `${fromDev?.name} <i data-lucide="${c.directed?'arrow-right':'arrow-left-right'}" style="width:12px;display:inline-block"></i> ${toDev?.name}`;
+            document.getElementById('propEdgeLabel').value = c.label || '';
+            document.getElementById('propEdgeVlan').value = c.vlan || '';
+            document.getElementById('propEdgeSpeed').value = c.linkSpeed || '';
+            document.getElementById('propEdgeDirected').checked = c.directed;
+            lucide.createIcons({ root: pEdge });
+            
+        } else {
+            pEmpty.style.display = 'flex';
+            if (net) {
+                document.getElementById('emptyNetName').innerText = net.name;
+                document.getElementById('emptyNetDesc').innerText = net.desc || 'No description provided.';
+                document.getElementById('emptyStats').innerText = `${net.devices.length} Devices, ${net.connections.length} Connections`;
+            }
+        }
+    }
+
+    // Property binding logic (save on blur/change)
+    function bindProp(id, cb) {
+        const el = document.getElementById(id);
+        el.addEventListener('change', () => { saveHistory(); cb(el); isDirty=true; updateUI(); });
+    }
+    bindProp('propDevName', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).name = el.value);
+    bindProp('propDevType', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).type = el.value);
+    bindProp('propDevIp', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).ip = el.value);
+    bindProp('propDevSubnet', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).subnet = el.value);
+    bindProp('propDevMac', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).mac = el.value);
+    bindProp('propDevNotes', el => getActiveNetwork().devices.find(d=>d.id===state.selectedDeviceId).notes = el.value);
+
+    bindProp('propEdgeLabel', el => getActiveNetwork().connections.find(c=>c.id===state.selectedConnectionId).label = el.value);
+    bindProp('propEdgeVlan', el => getActiveNetwork().connections.find(c=>c.id===state.selectedConnectionId).vlan = el.value);
+    bindProp('propEdgeSpeed', el => getActiveNetwork().connections.find(c=>c.id===state.selectedConnectionId).linkSpeed = el.value);
+    bindProp('propEdgeDirected', el => getActiveNetwork().connections.find(c=>c.id===state.selectedConnectionId).directed = el.checked);
+    
+    document.getElementById('btnReverseEdge').addEventListener('click', () => reverseEdge(state.selectedConnectionId));
+    document.getElementById('btnDeleteDevice').addEventListener('click', () => document.dispatchEvent(new KeyboardEvent('keydown',{'key':'Delete'})));
+    document.getElementById('btnDeleteEdge').addEventListener('click', () => document.dispatchEvent(new KeyboardEvent('keydown',{'key':'Delete'})));
+    document.getElementById('btnPropConnect').addEventListener('click', () => { setConnectMode(true); state.connectFromId=state.selectedDeviceId; });
+
+    function updateStatusBar() {
+        const net = getActiveNetwork();
+        if(!net) return;
+        document.getElementById('statusNetName').innerText = net.name;
+        document.getElementById('statusNodes').innerText = `${net.devices.length} Devices`;
+        document.getElementById('statusEdges').innerText = `${net.connections.length} Connections`;
+        
+        let help = "Selection Mode. Press C to connect, F to fit, Del to delete.";
+        if (state.connectMode) help = "Connect Mode. Click nodes to connect. Press Esc to cancel.";
+        if (interState.isPanning) help = "Panning canvas...";
+        document.getElementById('statusHelp').innerText = help;
+    }
+
+    function updateUI() {
+        updateNetworkSwitcher();
+        updateSidebar();
+        updatePropertiesPanel();
+        updateStatusBar();
+    }
+
+    // =========================================================================
+    // Core Modals
+    // =========================================================================
+    function openModal(id) {
+        const m = document.getElementById(id);
+        m.classList.add('open');
+        if(typeof animate !== 'undefined') animate(m.querySelector('.modal-content'), { scale: [0.95, 1], opacity: [0, 1] }, { duration: 0.2, easing: [0.16, 1, 0.3, 1] });
+    }
+    function closeModal() {
+        document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+            if(typeof animate !== 'undefined') {
+                animate(m.querySelector('.modal-content'), { scale: 0.95, opacity: 0 }, { duration: 0.15 }).finished.then(()=>m.classList.remove('open'));
+            } else {
+                m.classList.remove('open');
+            }
+        });
+    }
+
+    document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', closeModal));
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+        m.addEventListener('click', e => { if(e.target === m) closeModal(); });
+    });
+
+    // Add Device Modal
+    function openDeviceModal(device = null) {
+        document.getElementById('devModalId').value = device ? device.id : '';
+        document.getElementById('modalDeviceTitle').innerText = device ? 'Edit Device' : 'Add Device';
+        document.getElementById('devModalName').value = device ? device.name : '';
+        
+        const selType = document.getElementById('devModalType');
+        selType.innerHTML = Object.entries(DEVICE_TYPES).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+        selType.value = device ? device.type : 'server';
+
+        document.getElementById('devModalIp').value = device ? (device.ip||'') : '';
+        document.getElementById('devModalSubnet').value = device ? (device.subnet||'') : '';
+        document.getElementById('devModalMac').value = device ? (device.mac||'') : '';
+        document.getElementById('devModalNotes').value = device ? (device.notes||'') : '';
+        document.getElementById('btnSaveDevice').disabled = false;
+        
+        openModal('modalDevice');
+    }
+    document.getElementById('btnAddDevice').addEventListener('click', () => openDeviceModal());
+
+    // IP Validation
+    const ipInput = document.getElementById('devModalIp');
+    ipInput.addEventListener('input', e => {
+        const val = e.target.value.trim();
+        const err = document.getElementById('devModalIpError');
+        const cidrMatch = val.match(/^(\d{1,3}\.){3}\d{1,3}(\/(\d{1,2}))?$/);
+        if (val && !cidrMatch) {
+            e.target.classList.add('input-error'); err.style.display='block';
+            document.getElementById('btnSaveDevice').disabled = true;
+        } else {
+            e.target.classList.remove('input-error'); err.style.display='none';
+            document.getElementById('btnSaveDevice').disabled = false;
+            // auto fill subnet if CIDR
+            if(cidrMatch && cidrMatch[3]) {
+                const sub = document.getElementById('devModalSubnet');
+                if(sub.value === '') {
+                    if(cidrMatch[3] === '24') sub.value = '255.255.255.0';
+                    else sub.value = 'Auto'; // simplistic
+                }
+            }
+        }
+    });
+
+    document.getElementById('btnSaveDevice').addEventListener('click', () => {
+        const name = document.getElementById('devModalName').value.trim();
+        if(!name) { toast.error('Device name is required'); return; }
+        
+        saveHistory();
+        const net = getActiveNetwork();
+        const id = document.getElementById('devModalId').value;
+        const d = {
+            id: id || genId(),
+            name,
+            type: document.getElementById('devModalType').value,
+            ip: document.getElementById('devModalIp').value.split('/')[0],
+            subnet: document.getElementById('devModalSubnet').value,
+            mac: document.getElementById('devModalMac').value,
+            notes: document.getElementById('devModalNotes').value,
+            x: id ? net.devices.find(x=>x.id===id).x : net.viewport.x*-1/net.viewport.scale + canvasRect.width/2/net.viewport.scale + (Math.random()*80-40),
+            y: id ? net.devices.find(x=>x.id===id).y : net.viewport.y*-1/net.viewport.scale + canvasRect.height/2/net.viewport.scale + (Math.random()*80-40)
+        };
+
+        if (id) {
+            const idx = net.devices.findIndex(x=>x.id===id);
+            net.devices[idx] = Object.assign(net.devices[idx], d);
+            toast.success('Device updated');
+        } else {
+            net.devices.push(d);
+            toast.success(`Device '${d.name}' added`);
+            state.selectedDeviceId = d.id;
+        }
+        closeModal(); updateUI(); isDirty = true;
+    });
+
+    // Network Modal
+    document.getElementById('btnNewNetwork').addEventListener('click', () => {
+        document.getElementById('modalNetTitle').innerText = 'New Network';
+        document.getElementById('netModalName').value = '';
+        document.getElementById('netModalDesc').value = '';
+        document.getElementById('netModalVlan').value = '';
+        document.getElementById('netModalTemplateGroup').style.display = 'flex';
+        openModal('modalNetwork');
+    });
+    
+    document.getElementById('btnEditNetwork').addEventListener('click', () => {
+        const net = getActiveNetwork();
+        document.getElementById('modalNetTitle').innerText = 'Edit Network';
+        document.getElementById('netModalName').value = net.name;
+        document.getElementById('netModalDesc').value = net.desc || '';
+        document.getElementById('netModalVlan').value = net.vlan || '';
+        document.getElementById('netModalTemplateGroup').style.display = 'none';
+        openModal('modalNetwork');
+    });
+
+    document.getElementById('btnSaveNetwork').addEventListener('click', () => {
+        const name = document.getElementById('netModalName').value.trim();
+        if(!name) { toast.error('Network name is required'); return; }
+        
+        if (document.getElementById('netModalTemplateGroup').style.display === 'none') {
+            const net = getActiveNetwork();
+            net.name = name; net.desc = document.getElementById('netModalDesc').value; net.vlan = document.getElementById('netModalVlan').value;
+            toast.success('Network updated');
+        } else {
+            const newNet = {
+                id: genId(), name, desc: document.getElementById('netModalDesc').value, vlan: document.getElementById('netModalVlan').value,
+                viewport: { x:0, y:0, scale:1 }, devices: [], connections: []
+            };
+            const tpl = document.getElementById('netModalTemplate').value;
+            if(tpl === 'home') {
+                newNet.devices.push(
+                    { id:'t1', name:'Fritz!Box', ip:'192.168.1.1', type:'router', x:300, y:200 },
+                    { id:'t2', name:'Switch', ip:'192.168.1.2', type:'switch', x:300, y:350 },
+                    { id:'t3', name:'NAS', ip:'192.168.1.10', type:'nas', x:450, y:350 },
+                    { id:'t4', name:'PC', ip:'192.168.1.50', type:'workstation', x:300, y:500 }
+                );
+                newNet.connections.push({id:'tc1',from:'t1',to:'t2'}, {id:'tc2',from:'t2',to:'t3'}, {id:'tc3',from:'t2',to:'t4'});
+            } else if (tpl === 'dmz') {
+                newNet.devices.push(
+                    { id:'t1', name:'Firewall', type:'firewall', x:400, y:200 },
+                    { id:'t2', name:'DMZ Switch', type:'switch', x:400, y:350 },
+                    { id:'t3', name:'Web Server', type:'server', x:250, y:500 },
+                    { id:'t4', name:'Rev. Proxy', type:'proxy', x:550, y:500 }
+                );
+                newNet.connections.push({id:'tc1',from:'t1',to:'t2'}, {id:'tc2',from:'t2',to:'t3'}, {id:'tc3',from:'t2',to:'t4'});
+            }
+            state.networks.push(newNet);
+            state.activeNetworkId = newNet.id;
+            state.history = [];
+            toast.success(`Network '${name}' created`);
+        }
+        closeModal(); updateUI(); isDirty = true; updateNetworkSwitcher();
+    });
+
+    // Settings Modal
+    document.getElementById('btnSettings').addEventListener('click', () => {
+        document.getElementById('setSnapGrid').checked = state.settings.snapToGrid;
+        document.getElementById('setShowMinimap').checked = state.settings.showMinimap;
+        document.getElementById('setEdgeStyle').value = state.settings.edgeStyle;
+        openModal('modalSettings');
+    });
+
+    document.getElementById('setSnapGrid').addEventListener('change', e => state.settings.snapToGrid = e.target.checked);
+    document.getElementById('setShowMinimap').addEventListener('change', e => { state.settings.showMinimap = e.target.checked; document.getElementById('minimapContainer').classList.toggle('visible', state.settings.showMinimap); isDirty=true; });
+    document.getElementById('setEdgeStyle').addEventListener('change', e => { state.settings.edgeStyle = e.target.value; isDirty=true; });
+
+    // Export Logic
+    document.getElementById('btnExport').addEventListener('click', e => {
+        e.stopPropagation();
+        document.getElementById('exportMenu').classList.toggle('open');
+    });
+    document.addEventListener('click', () => { document.getElementById('exportMenu').classList.remove('open'); });
+
+    document.getElementById('btnExportJson').addEventListener('click', () => {
+        const net = getActiveNetwork();
+        const data = JSON.stringify(net, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `netmap-${net.name.replace(/\s+/g,'-').toLowerCase()}-${Date.now()}.json`;
+        a.click();
+        toast.success('JSON Exported');
+    });
+
+    document.getElementById('btnExportPng').addEventListener('click', () => {
+        const net = getActiveNetwork();
+        canvas.toBlob(blob => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `netmap-${net.name.replace(/\s+/g,'-').toLowerCase()}-${Date.now()}.png`;
+            a.click();
+            toast.success('PNG Exported');
+        }, 'image/png');
+    });
+
+    // Initialization
+    function init() {
+        if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        
+        lucide.createIcons();
+        initData();
+        updateUI();
+        
+        // start render loops
+        requestAnimationFrame(renderCanvas);
+        requestAnimationFrame(pulseLoop);
+        
+        toast.success('NetMap initialized successfully');
+    }
+
+    // Wait for icons to load minimal subset before first render
+    window.onload = init;
+
+    </script>
+</body>
+</html>
