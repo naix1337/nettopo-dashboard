@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    --primary: 174 58% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 83%;
+    --border-subtle: 0 0% 90%;
+    --input: 0 0% 83%;
+    --ring: 174 58% 39%;
+    --radius: 0.375rem;
+
+    --surface: 0 0% 100%;
+    --surface-elevated: 0 0% 96%;
+    --surface-hover: 0 0% 94%;
+
+    --success: 142 71% 65%;
+    --warning: 27 96% 61%;
+    --error: 0 94% 71%;
+    --info: 217 91% 68%;
+    --purple: 263 70% 76%;
+    --gold: 45 93% 56%;
+    --teal: 174 58% 39%;
+    --teal-hover: 174 72% 33%;
+    --teal-active: 174 75% 29%;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-elevated: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-modal: 0 16px 48px rgba(0,0,0,0.15);
+  }
+
+  .dark {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 174 84% 50%;
+    --primary-foreground: 0 0% 6%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 19%;
+    --border-subtle: 0 0% 15%;
+    --input: 0 0% 19%;
+    --ring: 174 84% 50%;
+    --radius: 0.375rem;
+
+    --surface: 0 0% 8%;
+    --surface-elevated: 0 0% 10%;
+    --surface-hover: 0 0% 12%;
+
+    --success: 142 71% 65%;
+    --warning: 27 96% 61%;
+    --error: 0 94% 71%;
+    --info: 217 91% 68%;
+    --purple: 263 70% 76%;
+    --gold: 45 93% 56%;
+    --teal: 174 84% 50%;
+    --teal-hover: 174 72% 44%;
+    --teal-active: 174 75% 36%;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-elevated: 0 4px 12px rgba(0,0,0,0.5);
+    --shadow-modal: 0 16px 48px rgba(0,0,0,0.7);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+}
+
+@layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  .shadow-modal {
+    box-shadow: var(--shadow-modal);
+  }
+  .shadow-node-selected {
+    box-shadow: 0 0 0 2px hsl(var(--teal)), 0 0 16px rgba(45,212,191,0.15);
+  }
+}
