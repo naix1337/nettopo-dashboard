@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { Network, Device, Connection } from '@/types/network';
+import { sampleNetworks } from '@/data/sample-data';
 
 interface NetworkContextType {
   networks: Network[];
@@ -33,9 +34,9 @@ interface NetworkContextType {
 const NetworkContext = createContext<NetworkContextType | null>(null);
 
 export function NetworkProvider({ children }: { children: React.ReactNode }) {
-  const [networks, setNetworks] = useState<Network[]>([]);
-  const [activeNetworkId, setActiveNetworkId] = useState<string>('');
-  const [activeNetwork, setActiveNetwork] = useState<Network | undefined>(undefined);
+  const [networks, setNetworks] = useState<Network[]>(sampleNetworks);
+  const [activeNetworkId, setActiveNetworkId] = useState<string>(sampleNetworks[0].id);
+  const [activeNetwork, setActiveNetwork] = useState<Network | undefined>(sampleNetworks[0]);
   
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -47,12 +48,11 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   // Load basic network list
   useEffect(() => {
     fetch('/api/networks').then(r => r.json()).then(data => {
+      if (!Array.isArray(data) || data.length === 0) return;
       setNetworks(data.map((n: any) => ({
-        id: n.id, name: n.name, description: n.desc, vlan: n.vlan, devices: [], connections: []
+        id: n.id, name: n.name, description: n.desc, devices: [], connections: []
       })));
-      if (data.length > 0 && !activeNetworkId) {
-        setActiveNetworkId(data[0].id);
-      }
+      setActiveNetworkId(data[0].id);
     }).catch(e => console.error("API error", e));
   }, []);
 
@@ -60,15 +60,16 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
      if (!activeNetworkId) return;
      fetch(`/api/networks/${activeNetworkId}`).then(r => r.json()).then(data => {
+         if(!data || !data.devices) return;
          const detailedNet: Network = {
-             id: data.id, name: data.name, description: data.desc, vlan: data.vlan,
+             id: data.id, name: data.name, description: data.desc,
              devices: data.devices.map((d: any) => ({
                  id: d.id, name: d.name, type: d.type, ip: d.ip, subnet: d.subnet,
                  mac: d.mac, notes: d.notes, position: {x: d.x, y: d.y}
              })),
              connections: data.connections.map((c: any) => ({
                  id: c.id, sourceId: c.fromId, targetId: c.toId, label: c.label,
-                 vlan: c.vlan, linkSpeed: c.linkSpeed, directed: c.directed
+                 linkSpeed: c.linkSpeed, directed: c.directed
              }))
          };
          setActiveNetwork(detailedNet);
@@ -120,7 +121,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     if(!activeNetworkId) return;
     const dbConn = {
        id: conn.id, from: conn.sourceId, to: conn.targetId,
-       label: conn.label || '', vlan: conn.vlan || '',
+       label: conn.label || '',
        linkSpeed: conn.linkSpeed || '', directed: conn.directed || false
     };
     await fetch(`/api/networks/${activeNetworkId}/connections`, {
@@ -137,7 +138,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
     const updated = { ...existing, ...updates };
     const dbConn = {
        id: updated.id, from: updated.sourceId, to: updated.targetId,
-       label: updated.label || '', vlan: updated.vlan || '',
+       label: updated.label || '',
        linkSpeed: updated.linkSpeed || '', directed: updated.directed || false
     };
     fetch(`/api/networks/${activeNetworkId}/connections`, {
@@ -157,7 +158,7 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
 
   const addNetwork = useCallback(async (network: Network) => {
     const dbFormat = {
-       id: network.id, name: network.name, desc: network.description || '', vlan: network.vlan || ''
+       id: network.id, name: network.name, desc: network.description || ''
     };
     await fetch('/api/networks', {
        method: 'POST', headers: {'Content-Type': 'application/json'},
